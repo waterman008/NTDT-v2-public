@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTDT VA Interface - Complete</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 8px;
+            min-height: 100vh;
+            user-select: none;
+        }
+        
+        .container {
+            max-width: 350px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #00ff88;
+            margin-bottom: 4px;
+        }
+        
+        .status-bar {
+            background: #1a1a1a;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .status-bar.listening { background: #2a3a2a; color: #00ff88; }
+        
+        /* Expiration Display */
+        .expiration-display {
+            background: #2d2d2d;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 10px;
+            color: #00ff88;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        /* Main entry form */
+        .entry-form {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .form-row.single {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-row.action {
+            grid-template-columns: 2fr 1fr;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-input, .form-select {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #fff;
+            padding: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            border-color: #00ff88;
+        }
+        
+        .ticker-input {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+        
+        .action-select {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .action-select option[value="BUY_TO_OPEN"] {
+            color: #00ff88;
+        }
+        
+        .action-select option[value="SELL_TO_CLOSE"] {
+            color: #ff6b6b;
+        }
+        
+        .form-select option {
+            background: #000;
+            color: #fff;
+        }
+        
+        /* Trade Summary */
+        .trade-summary {
+            background: #1a1a1a;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .trade-summary.ready {
+            background: #2a3a2a;
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+        
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            background: #333;
+            color: #888;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: not-allowed;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        
+        .submit-btn.ready {
+            background: #00ff88;
+            color: #000;
+            cursor: pointer;
+        }
+        
+        .submit-btn.ready:hover {
+            background: #00dd77;
+            transform: translateY(-1px);
+        }
+        
+        /* Guidance */
+        .guidance {
+            font-size: 10px;
+            color: #666;
+            line-height: 1.3;
+            margin-bottom: 12px;
+        }
+        
+        .guidance-line {
+            margin-bottom: 2px;
+        }
+        
+        /* Live Positions */
+        .positions-section {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .position-item {
+            background: #2d2d2d;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+        
+        .position-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .position-ticker {
+            font-weight: 600;
+            color: #00ff88;
+        }
+        
+        .position-pnl {
+            font-weight: 600;
+        }
+        
+        .position-pnl.profit { color: #00ff88; }
+        .position-pnl.loss { color: #ff6b6b; }
+        
+        .position-details {
+            color: #888;
+            font-size: 10px;
+        }
+        
+        .no-positions {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 16px;
+        }
+        
+        /* Alerts */
+        .alert {
+            background: #2a1a1a;
+            border: 1px solid #ff6b6b;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #ff6b6b;
+            display: none;
+        }
+        
+        .alert.show {
+            display: block;
+        }
+        
+        .alert.success {
+            background: #1a2a1a;
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NTDT Live Trading</h1>
+            <div class="status-bar listening">🎧 Listening for signals...</div>
+        </div>
+        
+        <div class="expiration-display" id="expirationDisplay">
+            Expires: <span id="expirationDate">Loading...</span>
+        </div>
+        
+        <div class="entry-form">
+            <!-- Action Type - CRITICAL MISSING FIELD -->
+            <div class="form-row action">
+                <div class="form-group">
+                    <label class="form-label">Action</label>
+                    <select class="form-select action-select" id="actionSelect">
+                        <option value="BUY_TO_OPEN">🟢 BUY TO OPEN (Entry)</option>
+                        <option value="SELL_TO_CLOSE">🔴 SELL TO CLOSE (Exit)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <select class="form-select" id="qtyInput">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5" selected>5</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Ticker and Type -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Ticker</label>
+                    <input type="text" class="form-input ticker-input" id="tickerInput" placeholder="Type ticker..." maxlength="8">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="typeSelect">
+                        <option value="">-</option>
+                        <option value="CALLS">Calls</option>
+                        <option value="PUTS">Puts</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Strike and Price -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Strike</label>
+                    <input type="text" class="form-input" id="strikeInput" placeholder="Strike" maxlength="3">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price</label>
+                    <input type="text" class="form-input" id="priceInput" placeholder="$0.00" maxlength="4">
+                </div>
+            </div>
+        </div>
+        
+        <div class="trade-summary" id="tradeSummary">
+            Enter trade details above...
+        </div>
+        
+        <button class="submit-btn" id="submitBtn">
+            Submit Trade
+        </button>
+        
+        <div class="alert" id="alertBox"></div>
+        
+        <div class="guidance">
+            <div class="guidance-line"><strong>BUY TO OPEN:</strong> New position entry (max 5 contracts)</div>
+            <div class="guidance-line"><strong>SELL TO CLOSE:</strong> Exit existing position (partial/full)</div>
+            <div class="guidance-line"><strong>Speed keys:</strong> Tab to advance, C/P for type, 1-5 for quantity</div>
+        </div>
+        
+        <div class="positions-section">
+            <div class="section-title">Live Positions</div>
+            <div id="positionsList">
+                <div class="no-positions">No open positions</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Calculate next Friday expiration
+        function calculateNextFriday() {
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 = Sunday, 5 = Friday
+            const daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+            const nextFriday = new Date(today);
+            
+            if (daysUntilFriday === 0 && today.getHours() >= 16) {
+                // If it's Friday after 4pm, get next Friday
+                nextFriday.setDate(today.getDate() + 7);
+            } else if (daysUntilFriday === 0) {
+                // If it's Friday before 4pm, use today
+                // nextFriday is already set to today
+            } else {
+                nextFriday.setDate(today.getDate() + daysUntilFriday);
+            }
+            
+            const options = { month: 'short', day: 'numeric' };
+            const daysDiff = Math.floor((nextFriday - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysDiff === 0) {
+                return "TODAY (0DTE)";
+            } else if (daysDiff === 1) {
+                return "Tomorrow (1DTE)";
+            } else {
+                return `${nextFriday.toLocaleDateString('en-US', options)} (${daysDiff}DTE)`;
+            }
+        }
+        
+        // Update expiration display
+        document.getElementById('expirationDate').textContent = calculateNextFriday();
+        
+        // Form elements
+        const actionSelect = document.getElementById('actionSelect');
+        const tickerInput = document.getElementById('tickerInput');
+        const typeSelect = document.getElementById('typeSelect');
+        const qtyInput = document.getElementById('qtyInput');
+        const strikeInput = document.getElementById('strikeInput');
+        const priceInput = document.getElementById('priceInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const tradeSummary = document.getElementById('tradeSummary');
+        const alertBox = document.getElementById('alertBox');
+        
+        // Sample tickers for autocomplete
+        const tickers = ['TSLA', 'COIN', 'AAPL', 'AMZN', 'NVDA', 'META', 'GOOGL', 'MSFT', 'SPY', 'QQQ'];
+        
+        // Auto-advance on keypress
+        typeSelect.addEventListener('keypress', function(e) {
+            if (e.key === 'c' || e.key === 'C') {
+                this.value = 'CALLS';
+                strikeInput.focus();
+            } else if (e.key === 'p' || e.key === 'P') {
+                this.value = 'PUTS';
+                strikeInput.focus();
+            }
+        });
+        
+        // Quantity auto-advance
+        qtyInput.addEventListener('keypress', function(e) {
+            if (e.key >= '1' && e.key <= '5') {
+                this.value = e.key;
+                setTimeout(() => {
+                    if (actionSelect.value === 'BUY_TO_OPEN') {
+                        tickerInput.focus();
+                    } else {
+                        // For SELL_TO_CLOSE, might want to focus ticker to select existing position
+                        tickerInput.focus();
+                    }
+                }, 50);
+            }
+        });
+        
+        // Action change handler
+        actionSelect.addEventListener('change', function() {
+            updateGuidanceForAction();
+            updateTradeSummary();
+        });
+        
+        function updateGuidanceForAction() {
+            const action = actionSelect.value;
+            const guidanceArea = document.querySelector('.guidance');
+            
+            if (action === 'BUY_TO_OPEN') {
+                guidanceArea.innerHTML = `
+                    <div class="guidance-line"><strong>NEW POSITION:</strong> Opening fresh trade (max 5 contracts)</div>
+                    <div class="guidance-line"><strong>Typical strikes:</strong> ATM to 5% OTM</div>
+                    <div class="guidance-line"><strong>Price range:</strong> $0.50 - $9.99 typical</div>
+                `;
+            } else {
+                guidanceArea.innerHTML = `
+                    <div class="guidance-line"><strong>EXIT POSITION:</strong> Closing existing trade</div>
+                    <div class="guidance-line"><strong>PT #1:</strong> Close 50% at key level</div>
+                    <div class="guidance-line"><strong>PT #2:</strong> Close 25% at resistance</div>
+                `;
+            }
+        }
+        
+        // Price formatting
+        priceInput.addEventListener('blur', function() {
+            let value = this.value.replace(/[^0-9.]/g, '');
+            if (value && !isNaN(value)) {
+                this.value = parseFloat(value).toFixed(2);
+            }
+        });
+        
+        // Real-time trade summary
+        function updateTradeSummary() {
+            const action = actionSelect.value;
+            const ticker = tickerInput.value.toUpperCase();
+            const type = typeSelect.value;
+            const qty = qtyInput.value;
+            const strike = strikeInput.value;
+            const price = priceInput.value;
+            
+            if (ticker && type && qty && strike && price) {
+                const actionText = action === 'BUY_TO_OPEN' ? '🟢 BUY' : '🔴 SELL';
+                const typeText = type === 'CALLS' ? 'Calls' : 'Puts';
+                const expiration = calculateNextFriday();
+                
+                tradeSummary.innerHTML = `${actionText} ${qty}x ${ticker} $${strike} ${typeText} @ $${price} (${expiration})`;
+                tradeSummary.classList.add('ready');
+                submitBtn.classList.add('ready');
+                submitBtn.disabled = false;
+            } else {
+                tradeSummary.innerHTML = 'Enter trade details above...';
+                tradeSummary.classList.remove('ready');
+                submitBtn.classList.remove('ready');
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // Add event listeners for real-time updates
+        [actionSelect, tickerInput, typeSelect, qtyInput, strikeInput, priceInput].forEach(input => {
+            input.addEventListener('input', updateTradeSummary);
+            input.addEventListener('change', updateTradeSummary);
+        });
+        
+        // Submit handler
+        submitBtn.addEventListener('click', function() {
+            if (!this.classList.contains('ready')) return;
+            
+            const tradeData = {
+                action: actionSelect.value,
+                ticker: tickerInput.value.toUpperCase(),
+                type: typeSelect.value,
+                quantity: parseInt(qtyInput.value),
+                strike: parseFloat(strikeInput.value),
+                price: parseFloat(priceInput.value),
+                expiration: 'FRIDAY'
+            };
+            
+            // Show submission feedback
+            showAlert(`${tradeData.action} order submitted for ${tradeData.ticker}!`, 'success');
+            
+            // Reset form for next trade
+            setTimeout(() => {
+                if (actionSelect.value === 'SELL_TO_CLOSE') {
+                    // After exit, might want to keep listening for more exits or new entries
+                } else {
+                    // Reset to default BUY_TO_OPEN for next entry
+                }
+                priceInput.value = '';
+                updateTradeSummary();
+            }, 1000);
+        });
+        
+        function showAlert(message, type = 'error') {
+            alertBox.textContent = message;
+            alertBox.className = `alert show ${type}`;
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize
+        updateGuidanceForAction();
+        updateTradeSummary();
+    </script>
+</body>
+</html>
