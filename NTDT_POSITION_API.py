@@ -375,7 +375,7 @@ def home():
     except FileNotFoundError:
         return """
         <h1>NTDT VA Interface</h1>
-        <p>Interface file not found. Please ensure NTDT_FULL_COMPACT_INTERFACE.html is deployed.</p>
+   <p>Interface file not found. Please ensure index.html is deployed.</p>
         <p>API Status: Running</p>
         <p>Available endpoints:</p>
         <ul>
