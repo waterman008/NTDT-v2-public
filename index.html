@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTDT VA Complete Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 8px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        .header h1 {
+            color: #00ff88;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .status-bar {
+            background: #1a1a1a;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .status-bar.listening { background: #2a3a2a; color: #00ff88; }
+        
+        /* Expiration Display */
+        .expiration-display {
+            background: #2d2d2d;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 10px;
+            color: #00ff88;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        /* Main entry form */
+        .entry-form {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1.8fr 75px 50px 60px 65px;
+            gap: 6px;
+            margin-bottom: 8px;
+            align-items: end;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+        
+        .form-label {
+            color: #666;
+            font-size: 9px;
+            font-weight: 500;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #000;
+            color: #fff;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+            outline: none;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            border-color: #00ff88;
+        }
+        
+        .ticker-input {
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #00ff88;
+            font-size: 16px;
+        }
+        
+        .ticker-input::placeholder {
+            color: #444;
+            font-size: 12px;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+        
+        /* Suggestions for ticker */
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1c1c1e;
+            border-radius: 6px;
+            margin-top: 2px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 100;
+            overflow: hidden;
+            display: none;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .suggestion {
+            padding: 6px 8px;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.1s ease;
+            border-bottom: 0.5px solid #2c2c2e;
+            font-size: 12px;
+        }
+        
+        .suggestion:last-child { border-bottom: none; }
+        .suggestion:hover, .suggestion.highlighted { background: rgba(0,255,136,0.15); }
+        
+        .suggestion-symbol {
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .suggestion-price {
+            color: #888;
+            font-size: 10px;
+        }
+        
+        /* Submit area */
+        .submit-area {
+            grid-column: span 5;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            padding: 8px;
+            background: #2d2d2d;
+            border-radius: 6px;
+        }
+        
+        .trade-summary {
+            flex: 1;
+            font-size: 11px;
+            color: #888;
+            font-style: italic;
+        }
+        
+        .trade-summary.ready {
+            color: #00ff88;
+            font-weight: 500;
+            font-style: normal;
+        }
+        
+        .submit-btn {
+            padding: 8px 16px;
+            background: #333;
+            color: #888;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: not-allowed;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .submit-btn.ready {
+            background: #00ff88;
+            color: #000;
+            cursor: pointer;
+        }
+        
+        /* Smart Guidance Area */
+        .guidance-area {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 6px;
+            min-height: 36px;
+        }
+        
+        .guidance-content {
+            font-size: 11px;
+            color: #888;
+            line-height: 1.3;
+        }
+        
+        .guidance-content.active {
+            color: #00ff88;
+        }
+        
+        .guidance-content div {
+            margin-bottom: 2px;
+        }
+        
+        .guidance-content div:last-child {
+            margin-bottom: 0;
+        }
+        
+        .submit-btn.submitting {
+            background: #666;
+            color: #ccc;
+        }
+        
+        /* Live positions section */
+        .positions-section {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .positions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .positions-title {
+            color: #00ff88;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .positions-count {
+            background: #2a3a2a;
+            color: #00ff88;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .position-card {
+            background: #2d2d2d;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 6px;
+            border-left: 3px solid #00ff88;
+            font-size: 11px;
+        }
+        
+        .position-card:last-child { margin-bottom: 0; }
+        .position-card.loss { border-left-color: #ff4444; }
+        
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .position-ticker {
+            font-weight: bold;
+            color: #fff;
+            font-size: 13px;
+        }
+        
+        .position-type {
+            background: #444;
+            color: #fff;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        
+        .position-type.call { background: #2a5a2a; color: #88ff88; }
+        .position-type.put { background: #5a2a2a; color: #ff8888; }
+        
+        .position-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-bottom: 6px;
+            font-size: 9px;
+            color: #888;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .detail-value {
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .position-pnl {
+            text-align: center;
+            padding: 4px;
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+        
+        .pnl-amount {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .pnl-amount.profit { color: #00ff88; }
+        .pnl-amount.loss { color: #ff4444; }
+        
+        .pnl-details {
+            font-size: 8px;
+            color: #666;
+            margin-top: 1px;
+        }
+        
+        .no-positions {
+            text-align: center;
+            padding: 16px;
+            color: #666;
+            font-size: 11px;
+            font-style: italic;
+        }
+        
+        /* Tab hint */
+        .tab-hint {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: rgba(0,255,136,0.1);
+            color: #00ff88;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-size: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        
+        .tab-hint.show { opacity: 1; }
+        
+        /* iOS-style price hint */
+        .price-hint {
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-style: italic;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+        
+        .price-hint.show {
+            opacity: 1;
+        }
+        
+        .price-hint.animate {
+            animation: hintPulse 0.5s ease-in-out;
+        }
+        
+        @keyframes hintPulse {
+            0% { opacity: 0; transform: translateY(-5px); }
+            50% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .container { max-width: 100%; }
+            .form-row { 
+                grid-template-columns: 1fr 1fr; 
+                gap: 4px; 
+            }
+            .form-row .form-group:first-child {
+                grid-column: span 2;
+            }
+            .position-details { grid-template-columns: 1fr 1fr; }
+        }
+        
+        @media (max-height: 700px) {
+            body { padding: 4px; }
+            .container { margin: 0; }
+            .entry-form, .positions-section { margin-bottom: 6px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>NTDT VA Interface</h1>
+            <div class="status-bar" id="statusBar">Ready to listen...</div>
+        </div>
+        
+        <!-- Auto-calculated Friday Expiration -->
+        <div class="expiration-display" id="expirationDisplay">
+            All trades expire: <span id="nextFriday">Loading...</span>
+        </div>
+        
+        <!-- Entry Form -->
+        <div class="entry-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="form-label">Ticker</div>
+                    <div style="position: relative;">
+                        <input type="text" class="form-input ticker-input" id="tickerInput" placeholder="Type ticker..." maxlength="8">
+                        <div class="tab-hint" id="tabHint">TAB</div>
+                        <div class="suggestions" id="suggestions"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label">Type</div>
+                    <select class="form-select" id="typeSelect">
+                        <option value="">C/P</option>
+                        <option value="C">Call</option>
+                        <option value="P">Put</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label">Qty</div>
+                    <select class="form-select" id="qtyInput">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5" selected>5</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label">Strike</div>
+                    <input type="text" class="form-input" id="strikeInput" placeholder="Strike" maxlength="3">
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label">Price</div>
+                    <input type="text" class="form-input" id="priceInput" placeholder="$0.00" maxlength="4">
+                    <div class="price-hint" id="priceHint"></div>
+                </div>
+            </div>
+            
+            <div class="submit-area">
+                <div class="trade-summary" id="tradeSummary">Complete all fields to continue...</div>
+                <button class="submit-btn" id="submitBtn" disabled>Submit Trade</button>
+            </div>
+            
+            <!-- Smart Guidance Area -->
+            <div class="guidance-area" id="guidanceArea">
+                <div class="guidance-content" id="guidanceContent">
+                    Select a ticker to see pricing guidance...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Positions -->
+        <div class="positions-section">
+            <div class="positions-header">
+                <div class="positions-title">Live Positions</div>
+                <div class="positions-count" id="positionsCount">0 Open</div>
+            </div>
+            
+            <div id="positionsContainer">
+                <div class="no-positions">
+                    No live positions<br>
+                    <span style="font-size: 9px; color: #444;">Filled trades appear here</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced ticker database with strike ranges and historical pricing
+        const TICKERS = {
+            'HOOD': { 
+                name: 'Robinhood', 
+                price: 118.40, 
+                keywords: ['hood', 'robinhood'],
+                strikes: [115, 116, 117, 118, 119, 120, 121, 122],
+                pricing: { min: 0.25, max: 3.50, typical: 1.21 }
+            },
+            'COIN': { 
+                name: 'Coinbase', 
+                price: 328.75, 
+                keywords: ['coin', 'coinbase'],
+                strikes: [325, 326, 327, 328, 329, 330, 331, 332],
+                pricing: { min: 0.45, max: 6.20, typical: 2.85 }
+            },
+            'TSLA': { 
+                name: 'Tesla', 
+                price: 347.50, 
+                keywords: ['tsla', 'tesla'],
+                strikes: [345, 346, 347, 348, 349, 350, 351, 352],
+                pricing: { min: 0.55, max: 7.80, typical: 3.45 }
+            },
+            'MSTR': { 
+                name: 'MicroStrategy', 
+                price: 345.20, 
+                keywords: ['mstr', 'microstrategy'],
+                strikes: [340, 342, 344, 345, 346, 348, 350],
+                pricing: { min: 0.35, max: 8.90, typical: 4.15 }
+            },
+            'NVDA': { 
+                name: 'NVIDIA', 
+                price: 365.80, 
+                keywords: ['nvda', 'nvidia', 'jen'],
+                strikes: [362, 364, 365, 366, 368, 370, 372],
+                pricing: { min: 0.65, max: 9.40, typical: 4.85 }
+            },
+            'CRCL': { 
+                name: 'Circle', 
+                price: 138.80, 
+                keywords: ['circle', 'crcl'],
+                strikes: [136, 137, 138, 139, 140, 141, 142],
+                pricing: { min: 0.15, max: 4.20, typical: 1.85 }
+            }
+        };
+
+        // Auto-calculate next Friday expiration
+        function calculateNextFriday() {
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0=Sunday, 5=Friday
+            let daysToFriday = 5 - dayOfWeek; // Days until Friday
+            
+            // If today is Friday, use today (0DTE same-day expiration)
+            if (daysToFriday === 0) {
+                // Today is Friday - use today for same-day expiration
+                const options = { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric' 
+                };
+                
+                return {
+                    date: today.toISOString().split('T')[0], // YYYY-MM-DD for API
+                    display: today.toLocaleDateString('en-US', options),
+                    daysAway: 0
+                };
+            }
+            
+            // If weekend (Saturday/Sunday), get next Friday
+            if (daysToFriday < 0) {
+                daysToFriday += 7; // Get next Friday
+            }
+            
+            const nextFriday = new Date(today);
+            nextFriday.setDate(today.getDate() + daysToFriday);
+            
+            const options = { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            };
+            
+            return {
+                date: nextFriday.toISOString().split('T')[0], // YYYY-MM-DD for API
+                display: nextFriday.toLocaleDateString('en-US', options),
+                daysAway: daysToFriday
+            };
+        }
+
+        // DOM elements
+        const tickerInput = document.getElementById('tickerInput');
+        const typeSelect = document.getElementById('typeSelect');
+        const qtyInput = document.getElementById('qtyInput');
+        const strikeInput = document.getElementById('strikeInput');
+        const priceInput = document.getElementById('priceInput');
+        const priceHint = document.getElementById('priceHint');
+        const submitBtn = document.getElementById('submitBtn');
+        const tradeSummary = document.getElementById('tradeSummary');
+        const suggestions = document.getElementById('suggestions');
+        const statusBar = document.getElementById('statusBar');
+        const tabHint = document.getElementById('tabHint');
+        const positionsContainer = document.getElementById('positionsContainer');
+        const positionsCount = document.getElementById('positionsCount');
+        const guidanceContent = document.getElementById('guidanceContent');
+
+        // State
+        let highlightedIndex = -1;
+        let currentMatches = [];
+        let livePositions = [];
+        let isSubmitting = false;
+        const fridayInfo = calculateNextFriday();
+
+        // Initialize
+        const daysText = fridayInfo.daysAway === 0 ? 'TODAY' : `${fridayInfo.daysAway} days`;
+        document.getElementById('nextFriday').textContent = `${fridayInfo.display} (${daysText})`;
+        tickerInput.focus();
+        
+        // Form validation
+        function validateForm() {
+            const ticker = tickerInput.value.trim();
+            const type = typeSelect.value;
+            const qty = parseInt(qtyInput.value) || 0;
+            const strike = parseFloat(strikeInput.value);
+            const priceValue = priceInput.value.replace('$', '').trim();
+            const price = parseFloat(priceValue);
+            
+            // Validate price format: must have proper x.xx format (dollars and cents)
+            const hasValidPriceFormat = priceValue.length > 0 && 
+                                       (priceValue.includes('.') ? 
+                                        priceValue.split('.')[1] && priceValue.split('.')[1].length >= 2 : 
+                                        false);
+            
+            const isValid = ticker.length > 0 && type && qty > 0 && strike > 0 && price > 0 && hasValidPriceFormat && !isSubmitting;
+            
+            submitBtn.disabled = !isValid;
+            submitBtn.className = isValid ? 'submit-btn ready' : 'submit-btn';
+            
+            if (isValid) {
+                const optionType = type === 'C' ? 'Calls' : 'Puts';
+                tradeSummary.textContent = `${qty}x ${ticker} ${optionType} $${Math.round(strike)} @ $${formatPrice(price)} (${fridayInfo.display})`;
+                tradeSummary.className = 'trade-summary ready';
+                submitBtn.textContent = 'Submit Trade';
+            } else {
+                tradeSummary.textContent = 'Complete all fields to continue...';
+                tradeSummary.className = 'trade-summary';
+                submitBtn.textContent = 'Submit Trade';
+            }
+        }
+
+        // Event listeners
+        [tickerInput, typeSelect, qtyInput, strikeInput, priceInput].forEach(input => {
+            input.addEventListener('input', validateForm);
+            input.addEventListener('change', validateForm);
+        });
+
+        // Price input validation (allow typing decimals, format on blur)
+        priceInput.addEventListener('input', function() {
+            let value = this.value.replace(/[^\d.]/g, ''); // Remove all except digits and decimal
+            
+            // Handle decimal places (max 2)
+            if (value.includes('.')) {
+                const parts = value.split('.');
+                if (parts[1] && parts[1].length > 2) {
+                    value = parts[0] + '.' + parts[1].substring(0, 2);
+                }
+            }
+            
+            // Enforce max value of 9.99 (realistic limit based on historical $9.80 max)
+            if (parseFloat(value) > 9.99) {
+                value = '9.99';
+            }
+            
+            // Don't add $ during typing - only set the clean value
+            this.value = value;
+            
+            // Hide hint when user starts typing
+            if (value.length > 0) {
+                priceHint.classList.remove('show');
+            }
+        });
+
+        priceInput.addEventListener('focus', function() {
+            // Remove $ when focusing for easier editing
+            if (this.value.startsWith('$')) {
+                this.value = this.value.substring(1);
+            }
+        });
+
+        priceInput.addEventListener('blur', function() {
+            const cleanValue = this.value.replace('$', '');
+            if (cleanValue && !isNaN(parseFloat(cleanValue))) {
+                this.value = '$' + formatPrice(cleanValue);
+            } else if (cleanValue === '') {
+                this.value = '';
+            }
+        });
+
+        // Strike input validation (no decimals, max 999)
+        strikeInput.addEventListener('input', function() {
+            let value = this.value.replace(/[^\d]/g, ''); // Only allow digits
+            if (value.length > 3) {
+                value = value.substring(0, 3); // Max 3 characters
+            }
+            if (parseInt(value) > 999) {
+                value = '999'; // Max value 999
+            }
+            this.value = value;
+        });
+
+        // Type dropdown keyboard navigation (C/P auto-advance)
+        typeSelect.addEventListener('keydown', function(e) {
+            if (e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                this.value = 'C';
+                validateForm();
+                setTimeout(() => qtyInput.focus(), 10);
+            } else if (e.key.toLowerCase() === 'p') {
+                e.preventDefault();
+                this.value = 'P';
+                validateForm();
+                setTimeout(() => qtyInput.focus(), 10);
+            }
+        });
+
+        // Quantity dropdown keyboard navigation (1-5 auto-advance)
+        qtyInput.addEventListener('keydown', function(e) {
+            if (e.key >= '1' && e.key <= '5') {
+                e.preventDefault();
+                this.value = e.key;
+                validateForm();
+                setTimeout(() => strikeInput.focus(), 10);
+            }
+        });
+
+        // Ticker input handler
+        tickerInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            
+            if (query.length === 0) {
+                hideSuggestions();
+                updateStatus('Ready to listen...');
+                return;
+            }
+
+            const matches = Object.keys(TICKERS).filter(ticker => {
+                const data = TICKERS[ticker];
+                return ticker.toLowerCase().startsWith(query) ||
+                       data.keywords.some(keyword => keyword.startsWith(query));
+            });
+
+            if (matches.length > 0) {
+                showSuggestions(matches);
+                updateStatus(`${matches.length} match${matches.length !== 1 ? 'es' : ''} found`);
+                tabHint.classList.toggle('show', query.length >= 2);
+            } else {
+                hideSuggestions();
+                updateStatus('No matches found');
+                tabHint.classList.remove('show');
+            }
+        });
+
+        // Keyboard navigation
+        tickerInput.addEventListener('keydown', function(e) {
+            if (suggestions.style.display !== 'block') return;
+
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    highlightedIndex = Math.min(highlightedIndex + 1, currentMatches.length - 1);
+                    updateHighlight();
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                    updateHighlight();
+                    break;
+                    
+                case 'Tab':
+                case 'Enter':
+                    e.preventDefault();
+                    if (currentMatches.length > 0) {
+                        const targetIndex = highlightedIndex >= 0 ? highlightedIndex : 0;
+                        selectTicker(currentMatches[targetIndex]);
+                        // After selecting ticker, jump to next field for speed
+                        setTimeout(() => typeSelect.focus(), 10);
+                    }
+                    break;
+                    
+                case 'Escape':
+                    hideSuggestions();
+                    break;
+            }
+        });
+
+        function showSuggestions(matches) {
+            currentMatches = matches;
+            highlightedIndex = -1;
+            
+            suggestions.innerHTML = matches.map(ticker => {
+                const data = TICKERS[ticker];
+                return `
+                    <div class="suggestion" data-ticker="${ticker}" onclick="selectTickerAndAdvance('${ticker}')">
+                        <span class="suggestion-symbol">${ticker}</span>
+                        <span class="suggestion-price">$${data.price}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            suggestions.style.display = 'block';
+        }
+
+        function hideSuggestions() {
+            suggestions.style.display = 'none';
+            highlightedIndex = -1;
+            currentMatches = [];
+            tabHint.classList.remove('show');
+        }
+
+        function updateHighlight() {
+            const items = suggestions.querySelectorAll('.suggestion');
+            items.forEach((item, index) => {
+                item.classList.toggle('highlighted', index === highlightedIndex);
+            });
+        }
+
+        function selectTicker(ticker) {
+            tickerInput.value = ticker;
+            hideSuggestions();
+            updateStatus(`${ticker} selected! Ready for trade details...`, true);
+            
+            // Auto-populate smart defaults
+            populateSmartDefaults(ticker);
+            validateForm();
+        }
+
+        // Separate function for clicking suggestions (includes auto-focus)
+        function selectTickerAndAdvance(ticker) {
+            selectTicker(ticker);
+            // Jump to next field for speed
+            setTimeout(() => typeSelect.focus(), 10);
+        }
+
+        function populateSmartDefaults(ticker) {
+            const tickerData = TICKERS[ticker];
+            if (!tickerData) return;
+            
+            const strikes = tickerData.strikes || [];
+            const pricing = tickerData.pricing || {};
+            
+            // Smart strike suggestion (show in placeholder only - no auto-fill for speed)
+            if (strikes.length > 0) {
+                const currentPrice = tickerData.price;
+                const closestStrike = strikes.reduce((prev, curr) => 
+                    Math.abs(curr - currentPrice) < Math.abs(prev - currentPrice) ? curr : prev
+                );
+                strikeInput.placeholder = `${closestStrike}`;
+            }
+            
+            // Smart price suggestion (iOS-style hint below the field)
+            if (pricing.typical) {
+                priceHint.textContent = `hint: probably near $${formatPrice(pricing.typical)}?`;
+                priceHint.classList.add('show', 'animate');
+                // Remove animation class after animation completes
+                setTimeout(() => priceHint.classList.remove('animate'), 500);
+            } else {
+                priceHint.classList.remove('show');
+            }
+            
+            // Update guidance area instead of popup feedback
+            updateGuidanceArea(ticker, strikes, pricing);
+        }
+
+        function formatPrice(price) {
+            return parseFloat(price).toFixed(2);
+        }
+        
+        function updateGuidanceArea(ticker, strikes, pricing) {
+            if (!ticker || !strikes.length || !pricing || !pricing.typical) {
+                guidanceContent.textContent = 'Select a ticker to see pricing guidance...';
+                guidanceContent.className = 'guidance-content';
+                return;
+            }
+            
+            const strikeRange = strikes.length > 1 ? 
+                `${strikes[0]}-${strikes[strikes.length-1]}` : 
+                `${strikes[0]}`;
+            
+            // Handle NaN values gracefully
+            const typicalPrice = pricing.typical && !isNaN(pricing.typical) ? formatPrice(pricing.typical) : 'N/A';
+            const lowPrice = pricing.min && !isNaN(pricing.min) ? formatPrice(pricing.min) : 'N/A';
+            const highPrice = pricing.max && !isNaN(pricing.max) ? formatPrice(pricing.max) : 'N/A';
+                
+            guidanceContent.innerHTML = `
+                <div><strong>${ticker}</strong> (${fridayInfo.display})</div>
+                <div>Common strikes: ${strikeRange}</div>
+                <div>Average entry: $${typicalPrice} • Range: $${lowPrice}-$${highPrice}</div>
+            `;
+            guidanceContent.className = 'guidance-content active';
+        }
+
+        function updateStatus(message, success = false) {
+            statusBar.textContent = message;
+            statusBar.className = success ? 'status-bar listening' : 'status-bar';
+        }
+
+        // Submit handler - Simplified for demo
+        submitBtn.addEventListener('click', function() {
+            if (this.disabled || isSubmitting) return;
+            
+            const ticker = tickerInput.value.trim().toUpperCase();
+            const type = typeSelect.value;
+            const strike = parseFloat(strikeInput.value);
+            const price = parseFloat(priceInput.value.replace('$', ''));
+            const quantity = parseInt(qtyInput.value);
+            
+            isSubmitting = true;
+            this.textContent = 'Submitting...';
+            this.className = 'submit-btn submitting';
+            
+            // Step 1: Show submission confirmation
+            setTimeout(() => {
+                const optionType = type === 'C' ? 'Calls' : 'Puts';
+                
+                alert(`Order Submitted:\n${quantity}x ${ticker} ${optionType} $${strike} @ $${formatPrice(price)}\nExpires: ${fridayInfo.display}\n\nWaiting for fill... (Demo mode)`);
+                
+                clearForm();
+                isSubmitting = false;
+                validateForm();
+                
+            }, 800); // Short delay for realistic API call
+        });
+
+        function clearForm() {
+            tickerInput.value = '';
+            typeSelect.value = '';
+            strikeInput.value = '';
+            priceInput.value = '';
+            qtyInput.value = '5';
+            guidanceContent.textContent = 'Select a ticker to see pricing guidance...';
+            guidanceContent.className = 'guidance-content';
+            priceHint.classList.remove('show');
+            updateStatus('Ready to listen...');
+            tickerInput.focus();
+        }
+
+        // Click outside to hide suggestions
+        document.addEventListener('click', function(e) {
+            if (!tickerInput.contains(e.target) && !suggestions.contains(e.target)) {
+                hideSuggestions();
+            }
+        });
+
+        // Initialize
+        validateForm();
+    </script>
+</body>
+</html>
