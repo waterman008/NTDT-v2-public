@@ -370,7 +370,7 @@ def internal_error(error):
 def home():
     """Serve the main VA interface"""
     try:
-        with open('NTDT_FULL_COMPACT_INTERFACE.html', 'r') as f:
+      with open('index.html', 'r') as f:
             return f.read()
     except FileNotFoundError:
         return """
