@@ -55,7 +55,7 @@ def validate_position():
             validator = PositionValidator(DB_PATH)
             
             # Run fast risk checks first
-            risk_result = risk_engine.validate_fast_checks(ticker, strike, option_type, contracts, float(data.get('entry_price', 0)))
+            risk_result = risk_engine.validate_buy_to_open(ticker, strike, option_type, contracts, float(data.get('entry_price', 0)))
             if not risk_result.valid:
                 return jsonify({
                     'valid': False,
@@ -65,8 +65,8 @@ def validate_position():
                     'error': 'RISK_CHECK_FAILED'
                 }), 400
             
-            # Run position-specific validation
-            result = validator.validate_new_position(ticker, strike, option_type, contracts)
+            # Run position-specific validation  
+            result = validator.validate_buy_to_open(ticker, strike, option_type, contracts)
             
             # Add risk warnings to response
             if risk_result.warnings:
@@ -147,7 +147,7 @@ def open_position():
         validator = PositionValidator(DB_PATH)
         
         # Run fast risk checks first
-        risk_result = risk_engine.validate_fast_checks(ticker, strike, option_type, contracts, entry_price)
+        risk_result = risk_engine.validate_buy_to_open(ticker, strike, option_type, contracts, entry_price)
         if not risk_result.valid:
             return jsonify({
                 'success': False,

@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """
 NTDT Fast Risk Engine
-High-speed risk validation for live trading
+High-speed risk validation for BUY_TO_OPEN orders only
 All checks designed to complete in under 25ms total
 
-Key Risk Checks (Fast):
+NTDT Simplified Order Flow:
+- ONLY validates BUY_TO_OPEN orders (new positions)
+- SELL_TO_CLOSE orders validated by PositionValidator only
+- No complex spread or multi-leg validation needed
+
+Fast Risk Checks for BUY_TO_OPEN:
 1. Session execution limits (6 new positions, 50 total executions)
 2. Position dollar limits ($2,500 per position, $15,000 total portfolio)
 3. Strike price bounds (based on .srt historical data + buffer)
@@ -135,11 +140,17 @@ class FastRiskEngine:
         self.conn.commit()
         self.logger.info("Fast Risk Engine database initialized")
         
-    def validate_fast_checks(self, ticker: str, strike: float, option_type: str, 
+    def validate_buy_to_open(self, ticker: str, strike: float, option_type: str, 
                            contracts: int, entry_price: float) -> RiskResult:
         """
-        Run all fast risk checks in sequence
+        Validate BUY_TO_OPEN order against NTDT fast risk checks
         Target: Complete in under 25ms
+        
+        Only validates new position openings:
+        - Session limits (positions, executions, exposure)
+        - Strike price bounds (ticker-specific)
+        - Contract quantity limits
+        - Price reasonableness checks
         """
         start_time = datetime.now()
         warnings = []
@@ -459,7 +470,7 @@ if __name__ == '__main__':
     for i, (ticker, strike, option_type, contracts, price) in enumerate(test_cases, 1):
         print(f"\nTest {i}: {ticker} {strike} {option_type} x{contracts} @ ${price}")
         
-        result = risk_engine.validate_fast_checks(ticker, strike, option_type, contracts, price)
+        result = risk_engine.validate_buy_to_open(ticker, strike, option_type, contracts, price)
         
         print(f"  Valid: {result.valid}")
         print(f"  Risk Level: {result.risk_level}")

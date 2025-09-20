@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
 NTDT Position Validator
-Implements 1-position-per-ticker-per-session validation based on .srt analysis
+Implements simplified NTDT order flow: BUY_TO_OPEN and SELL_TO_CLOSE only
 
-Key Rules:
+NTDT Trading Rules:
+- ONLY BUY_TO_OPEN: Opening new positions (max 5 contracts per ticker)
+- ONLY SELL_TO_CLOSE: Closing existing positions (partial or full)
+- NO BUY_TO_CLOSE: Never closing short positions (we don't sell options)
+- NO SELL_TO_OPEN: Never opening short positions (we don't sell options)
+
+Session Rules:
 - Max 1 position per ticker per session
-- Max 5 contracts per position
+- Max 5 contracts per position  
 - Same strike price per ticker (no multiple strikes)
 - Partial exits allowed from same position
 """
@@ -97,15 +103,16 @@ class PositionValidator:
         today = date.today().strftime("%Y%m%d")
         return f"session_{today}_{datetime.now().strftime('%H%M')}"
 
-    def validate_new_position(self, ticker: str, strike: float, option_type: str, 
-                            contracts: int, session_id: str = None) -> ValidationResult:
+    def validate_buy_to_open(self, ticker: str, strike: float, option_type: str, 
+                           contracts: int, session_id: str = None) -> ValidationResult:
         """
-        Validate new position against NT rules
+        Validate BUY_TO_OPEN order against NTDT rules
         
-        Rules:
-        1. Max 1 position per ticker per session
+        NTDT BUY_TO_OPEN Rules:
+        1. Max 1 position per ticker per session (no re-entry)
         2. Max 5 contracts per position
         3. Must be valid option type (CALL/PUT)
+        4. Opening new bullish (calls) or bearish (puts) position
         """
         if not session_id:
             session_id = self.get_current_session_id()
@@ -148,10 +155,62 @@ class PositionValidator:
         
         return ValidationResult(
             valid=True,
-            reason="Position allowed",
+            reason="BUY_TO_OPEN allowed",
             current_contracts=0,
             available_contracts=5 - contracts
         )
+
+    def validate_order(self, order_action: str, ticker: str, strike: float = None, 
+                      option_type: str = None, contracts: int = None, 
+                      session_id: str = None) -> ValidationResult:
+        """
+        Main order validation - routes to appropriate validator based on order_action
+        
+        NTDT Allowed Order Actions:
+        - BUY_TO_OPEN: Opening new positions
+        - SELL_TO_CLOSE: Closing existing positions
+        
+        NTDT Rejected Order Actions:
+        - BUY_TO_CLOSE: We never close short positions (we don't sell options)
+        - SELL_TO_OPEN: We never open short positions (we don't sell options)
+        """
+        order_action = order_action.upper().strip()
+        
+        # Check for forbidden order types
+        if order_action == "BUY_TO_CLOSE":
+            return ValidationResult(
+                valid=False,
+                reason="BUY_TO_CLOSE not allowed - NTDT only uses BUY_TO_OPEN and SELL_TO_CLOSE"
+            )
+        
+        if order_action == "SELL_TO_OPEN":
+            return ValidationResult(
+                valid=False,
+                reason="SELL_TO_OPEN not allowed - NTDT only uses BUY_TO_OPEN and SELL_TO_CLOSE"
+            )
+        
+        # Route to appropriate validator
+        if order_action == "BUY_TO_OPEN":
+            if not all([strike, option_type, contracts]):
+                return ValidationResult(
+                    valid=False,
+                    reason="BUY_TO_OPEN requires: ticker, strike, option_type, contracts"
+                )
+            return self.validate_buy_to_open(ticker, strike, option_type, contracts, session_id)
+        
+        elif order_action == "SELL_TO_CLOSE":
+            if not contracts:
+                return ValidationResult(
+                    valid=False,
+                    reason="SELL_TO_CLOSE requires: ticker, contracts"
+                )
+            return self.validate_sell_to_close(ticker, contracts, session_id)
+        
+        else:
+            return ValidationResult(
+                valid=False,
+                reason=f"Unknown order action: {order_action}. NTDT only supports BUY_TO_OPEN and SELL_TO_CLOSE"
+            )
 
     def validate_add_contracts(self, ticker: str, additional_contracts: int, 
                              session_id: str = None) -> ValidationResult:
@@ -195,14 +254,15 @@ class PositionValidator:
             existing_position=existing
         )
 
-    def validate_close_contracts(self, ticker: str, contracts_to_close: int, 
-                               session_id: str = None) -> ValidationResult:
+    def validate_sell_to_close(self, ticker: str, contracts_to_close: int, 
+                              session_id: str = None) -> ValidationResult:
         """
-        Validate closing contracts from existing position
+        Validate SELL_TO_CLOSE order against NTDT rules
         
-        Rules:
-        1. Position must exist
-        2. Cannot close more than currently held
+        NTDT SELL_TO_CLOSE Rules:
+        1. Position must exist (can only sell what you own)
+        2. Cannot close more contracts than currently held
+        3. Selling existing calls/puts for profit/loss
         """
         if not session_id:
             session_id = self.get_current_session_id()
@@ -298,8 +358,8 @@ class PositionValidator:
         if not session_id:
             session_id = self.get_current_session_id()
             
-        # Validate first
-        validation = self.validate_new_position(ticker, strike, option_type, contracts, session_id)
+        # Validate BUY_TO_OPEN first
+        validation = self.validate_buy_to_open(ticker, strike, option_type, contracts, session_id)
         if not validation.valid:
             return False, validation.reason, ""
         
@@ -358,7 +418,7 @@ class PositionValidator:
         if not session_id:
             session_id = self.get_current_session_id()
             
-        validation = self.validate_close_contracts(ticker, contracts_to_close, session_id)
+        validation = self.validate_sell_to_close(ticker, contracts_to_close, session_id)
         if not validation.valid:
             return False, validation.reason
         
@@ -420,18 +480,37 @@ class PositionValidator:
 if __name__ == "__main__":
     validator = PositionValidator()
     
-    # Test new position
-    result = validator.validate_new_position("TSLA", 340.0, "CALL", 5)
-    print(f"New TSLA position: {result.valid} - {result.reason}")
+    print("=== NTDT Order Type Validation Tests ===\n")
+    
+    # Test forbidden order types
+    print("Testing forbidden order types:")
+    result = validator.validate_order("SELL_TO_OPEN", "TSLA", 340.0, "CALL", 5)
+    print(f"SELL_TO_OPEN: {result.valid} - {result.reason}")
+    
+    result = validator.validate_order("BUY_TO_CLOSE", "TSLA", contracts=5)
+    print(f"BUY_TO_CLOSE: {result.valid} - {result.reason}")
+    
+    print("\nTesting allowed order types:")
+    # Test BUY_TO_OPEN
+    result = validator.validate_order("BUY_TO_OPEN", "TSLA", 340.0, "CALL", 5)
+    print(f"BUY_TO_OPEN TSLA: {result.valid} - {result.reason}")
     
     if result.valid:
         success, msg, pos_id = validator.open_position("TSLA", 340.0, "CALL", "0DTE", 5, 2.50)
         print(f"Open result: {success} - {msg}")
     
-    # Test duplicate position (should fail)
-    result2 = validator.validate_new_position("TSLA", 350.0, "CALL", 3)
-    print(f"Second TSLA position: {result2.valid} - {result2.reason}")
+    # Test duplicate BUY_TO_OPEN (should fail - 1 per ticker per session)
+    result2 = validator.validate_order("BUY_TO_OPEN", "TSLA", 350.0, "CALL", 3)
+    print(f"Second BUY_TO_OPEN TSLA: {result2.valid} - {result2.reason}")
+    
+    # Test SELL_TO_CLOSE
+    result3 = validator.validate_order("SELL_TO_CLOSE", "TSLA", contracts=2)
+    print(f"SELL_TO_CLOSE TSLA (partial): {result3.valid} - {result3.reason}")
+    
+    if result3.valid:
+        success, msg = validator.close_contracts("TSLA", 2)
+        print(f"Close result: {success} - {msg}")
     
     # Test session summary
     summary = validator.get_session_summary()
-    print(f"Session summary: {summary}")
+    print(f"\nSession summary: {summary}")
